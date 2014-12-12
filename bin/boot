@@ -16,12 +16,16 @@ if [ ! -f $LOGSTASH_CONFIG_FILE ]; then
 
     # If you don't provide a value for the LOGSTASH_CONFIG_URL env
     # var, your install will default to our very basic logstash.conf file.
-    if [ -z "$LOGSTASH_CONFIG_URL" ]; then
-        LOGSTASH_CONFIG_URL="https://gist.github.com/pblittle/8778567/raw/logstash.conf"
-    fi
+    if [ -n "$LOGSTASH_CONFIG_CONTENTS" ]; then
+        echo "$LOGSTASH_CONFIG_CONTENTS" > $LOGSTASH_CONFIG_FILE
+    else
+        if [ -z "$LOGSTASH_CONFIG_URL" ]; then
+            LOGSTASH_CONFIG_URL="https://gist.github.com/pblittle/8778567/raw/logstash.conf"
+        fi
 
-    echo "Downloading default configuration file ..."
-    wget $LOGSTASH_CONFIG_URL -O $LOGSTASH_CONFIG_FILE
+        echo "Downloading default configuration file ..."
+        wget $LOGSTASH_CONFIG_URL -O $LOGSTASH_CONFIG_FILE
+    fi
 
     # This magic will replace ES_HOST and ES_PORT in your logstash.conf
     # file if they exist with the IP and port dynamically generated
@@ -51,8 +55,19 @@ LF_SSL_CERT_FILE="${SSL_CERT_PATH}/logstash-forwarder.crt"
 mkdir -p $SSL_CERT_PATH
 
 # Download logstash-forwarder key and certificate
-wget $LF_SSL_CERT_URL -O $LF_SSL_CERT_FILE
-wget $LF_SSL_CERT_KEY_URL -O $LF_SSL_CERT_KEY_FILE
+if [ ! -f $LF_SSL_CERT_FILE ]; then
+  wget $LF_SSL_CERT_URL -O $LF_SSL_CERT_FILE
+fi
+if [ ! -f $LF_SSL_CERT_KEY_FILE ]; then
+  wget $LF_SSL_CERT_KEY_URL -O $LF_SSL_CERT_KEY_FILE
+fi
+
+if [ -n "$LF_SSL_CERT_CONTENTS" ]; then
+  echo "$LF_SSL_CERT_CONTENTS" > $LF_SSL_CERT_FILE
+fi
+if [ -n "$LF_SSL_CERT_KEY_CONTENTS" ]; then
+  echo "$LF_SSL_CERT_KEY_CONTENTS" > $LF_SSL_CERT_KEY_FILE
+fi
 
 # Fire up logstash!
 exec /opt/logstash/bin/logstash \
