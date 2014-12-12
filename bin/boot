@@ -8,6 +8,52 @@ set -eo pipefail
 
 LOGSTASH_CONFIG_FILE="/opt/logstash.conf"
 
+# Generate config file from oneline "property" list format if present
+if [ -n "$LOGSTASH_CONFIG_ONELINE" ]; then
+  previous=()
+  (
+    IFS=';'
+    list=$LOGSTASH_CONFIG_ONELINE
+    for var in $list ;
+    do
+      echo $var
+    done | while read line ; do
+      IFS=' '; key=$(echo "$line" | cut -d'=' -f1) ;
+      value=$(echo "$line" | cut -d'=' -f2-) ;
+      IFS='.' components=($key)
+      IFS=' ';
+      # section = input, filter, output
+      section=${components[0]}
+      grouping=${components[1]}
+      property=${components[2]}
+  
+      if [ "${section}" != "${previous[0]}" ]; then
+        if [ -n "${previous[1]}" ]; then
+          echo "  }"
+        fi
+        if [ -n "${previous[0]}" ]; then
+          echo "}"
+        fi
+        previous=()
+        echo "${section} {"
+      fi
+  
+      if [ "${grouping}" != "${previous[1]}" ]; then
+        if [ -n "${previous[1]}" ]; then
+          echo "  }"
+        fi
+        echo "  ${grouping} {"
+      fi
+  
+      echo "    ${property} => ${value}"
+  
+      previous=(${components[*]});
+    done
+    echo "  }"
+    echo "}"
+  ) > $LOGSTASH_CONFIG_FILE
+fi
+
 # Download default conf if none present
 if [ ! -f $LOGSTASH_CONFIG_FILE ]; then
     # Use the LOGSTASH_CONFIG_URL env var to download and use your
@@ -75,3 +121,4 @@ exec /opt/logstash/bin/logstash \
     --config $LOGSTASH_CONFIG_FILE \
     -- \
     web
+

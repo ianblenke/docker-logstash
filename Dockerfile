@@ -1,5 +1,5 @@
 FROM java:7-jre
-MAINTAINER P. Barrett Little <barrett@barrettlittle.com>
+MAINTAINER Ian Blenke <ian@blenke.com>
 
 # Download version 1.4.2 of logstash
 RUN cd /tmp && \
